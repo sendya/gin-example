@@ -1,1 +1,20 @@
 app-name: example
+host: 127.0.0.1
+port: 8080
+
+database:
+  type: mysql
+  dsn:
+    - 'root:abc@123..@tcp(127.0.0.1:3306)/uncrash?charset=utf8mb4&parseTime=True&loc=Local'
+  debug: true
+  migrator: false
+
+redis:
+  addr: 127.0.0.1:6379
+  password: abc@123..
+  db: 1
+
+logger:
+  level: debug # debug | info | warn | error
+  path: ./logs
+  caller: true

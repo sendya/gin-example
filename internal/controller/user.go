@@ -1,13 +1,15 @@
 package controller
 
 import (
-	"example/api/types"
-
 	"github.com/gin-gonic/gin"
 	"github.com/sendya/pkg/ginx/resp"
+
+	"example/api/types"
+	"example/internal/service"
 )
 
 type UserController struct {
+	userService *service.UserService
 }
 
 func NewUserController(v1 *gin.RouterGroup) {
@@ -25,5 +27,15 @@ func (c *UserController) login(ctx *gin.Context) {
 		return
 	}
 
-	resp.OK(ctx)
+	user, err := c.userService.Login(data.Username, data.Password)
+	if err != nil {
+		resp.BadRequest(ctx, err)
+		return
+	}
+
+	// mark security data
+	user.Salt = ""
+	user.Password = ""
+
+	resp.JSON(ctx, user)
 }

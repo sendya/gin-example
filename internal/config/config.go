@@ -19,7 +19,6 @@ var (
 
 type Config struct {
 	APPName string `mapstructure:"app-name" json:"app-name"`
-	AppEnv  string `mapstructure:"app-env" json:"app-env"`
 	Host    string `mapstructure:"host" json:"host"`
 	Port    int    `mapstructure:"port" json:"port"`
 
@@ -55,7 +54,7 @@ func New() *Config {
 
 	viper.SetConfigName(fmt.Sprintf("%s.%s", defFileName, AppEnv))
 	viper.SetConfigType(defFileExt)
-	viper.AddConfigPath("/etc/example/")
+	// viper.AddConfigPath("/etc/example/")
 	viper.AddConfigPath("./config/")
 	viper.AddConfigPath(".")
 
