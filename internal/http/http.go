@@ -14,8 +14,10 @@ import (
 func New(
 	lc fx.Lifecycle,
 	conf *config.Config,
+	ch chan struct{},
 ) (*gin.Engine, *gin.RouterGroup) {
 	gin.SetMode(gin.ReleaseMode)
+	confapp := conf.App
 
 	r := gin.New()
 
@@ -29,10 +31,11 @@ func New(
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
-				log.Infof("listening web serve http://localhost:%d", conf.Port)
-				log.Infof("listening swagserve http://localhost:%d/swagger/index.html", conf.Port)
+				log.Infof("listening web serve http://localhost:%d", confapp.Port)
 
-				if err := r.Run(fmt.Sprintf("%s:%d", conf.Host, conf.Port)); err != nil {
+				ch <- struct{}{}
+
+				if err := r.Run(fmt.Sprintf("%s:%d", confapp.Host, confapp.Port)); err != nil {
 					log.Fatal("start web serve ", log.String("err", err.Error()))
 				}
 			}()

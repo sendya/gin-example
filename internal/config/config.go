@@ -14,13 +14,16 @@ var (
 	AppEnv       string = "prod"
 	defFileName  string = "config"
 	defFileExt   string = "yml"
+	genconfig    bool
 	GlobalCofnig *Config
 )
 
 type Config struct {
-	APPName string `mapstructure:"app-name" json:"app-name"`
-	Host    string `mapstructure:"host" json:"host"`
-	Port    int    `mapstructure:"port" json:"port"`
+	App struct {
+		Name string `mapstructure:"name" json:"name"`
+		Host string `mapstructure:"host" json:"host"`
+		Port int    `mapstructure:"port" json:"port"`
+	} `mapstructure:"app" json:"app"`
 
 	Database struct {
 		Type     string   `mapstructure:"type" json:"type"`
@@ -44,36 +47,57 @@ type Config struct {
 
 func init() {
 	flag.StringVar(&AppEnv, "env", "prod", "dev, test, prod")
+	flag.BoolVar(&genconfig, "genconfig", false, "generate default config file")
 }
 
 func New() *Config {
 	var (
 		err  error
 		conf *Config
+		v    *viper.Viper
 	)
+	cf := envFile(defFileName, AppEnv)
+	v = viper.New()
 
-	viper.SetConfigName(fmt.Sprintf("%s.%s", defFileName, AppEnv))
-	viper.SetConfigType(defFileExt)
-	// viper.AddConfigPath("/etc/example/")
-	viper.AddConfigPath("./config/")
-	viper.AddConfigPath(".")
+	v.SetConfigName(cf)
+	v.SetConfigType("yaml")
+	v.AddConfigPath("./config/")
+	v.AddConfigPath(".")
 
-	if err = viper.ReadInConfig(); err != nil {
-		log.Warn("load config err", log.String("msg", err.Error()))
-		viper.SetConfigName(defFileName)
-		log.Info("try load default config", log.String("filename", defFileName))
-		if err = viper.ReadInConfig(); err != nil {
+	// set default config
+	v.SetDefault("app.name", "myapp")
+	v.SetDefault("app.host", "localhost")
+	v.SetDefault("app.port", 9000)
+	v.SetDefault("logger.level", "info")
+	v.SetDefault("logger.path", "./logs")
+	v.SetDefault("logger.caller", true)
+
+	if genconfig {
+		filename := filepath.Join(filepath.Dir("config/"), cf)
+		v.WriteConfigAs(filename)
+		fmt.Println("writter config " + filename)
+		os.Exit(0)
+	}
+
+	log.Info("load env config", log.String("filename", cf))
+	if err = v.ReadInConfig(); err != nil {
+		log.Warn("load env config not found")
+
+		cf = envFile(defFileName, "")
+		v.SetConfigName(cf)
+		log.Info("load def config", log.String("filename", cf))
+		if err = v.ReadInConfig(); err != nil {
 			log.Errorf(err.Error())
 			os.Exit(1)
 		}
 	}
 
-	if err = viper.Unmarshal(&conf); err != nil {
+	if err = v.Unmarshal(&conf); err != nil {
 		log.Errorf(err.Error())
 		os.Exit(1)
 	}
 
-	log.Info("conf loaded", log.String("level", conf.Logger.Level), log.String("env", AppEnv))
+	log.Info("conf load", log.String("level", conf.Logger.Level), log.String("env", AppEnv))
 	log.SetLevel(conf.Logger.Level)
 
 	if AppEnv == "prod" {
@@ -81,6 +105,8 @@ func New() *Config {
 	}
 
 	GlobalCofnig = conf
+
+	v.WriteConfigAs("test.yml")
 
 	return conf
 }
@@ -120,4 +146,11 @@ func fileLogger(conf *Config) {
 
 	rotate := log.NewTeeWithRotate(tops, opts...)
 	log.ResetDefault(rotate)
+}
+
+func envFile(filename string, env string) string {
+	if env == "" {
+		return fmt.Sprintf("%s.%s", filename, defFileExt)
+	}
+	return fmt.Sprintf("%s.%s.%s", filename, env, defFileExt)
 }

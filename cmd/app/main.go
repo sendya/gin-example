@@ -17,6 +17,10 @@ import (
 	"go.uber.org/fx"
 )
 
+type ReadyApp = struct{}
+
+var ready = make(chan ReadyApp, 1)
+
 func main() {
 	flag.Parse()
 
@@ -28,6 +32,9 @@ func main() {
 	ctx := context.Background()
 
 	if app := setupApp(ctx); app != nil {
+		// waitting app ready signal.
+		<-ready
+
 		fmt.Println("Serve running.")
 
 		ch := make(chan os.Signal, 1)
@@ -45,6 +52,7 @@ func setupApp(ctx context.Context) *fx.App {
 		fx.NopLogger,
 		// provide
 		fx.Options(
+			fx.Provide(func() chan ReadyApp { return ready }),
 			fx.Provide(env.CompileInfo),
 			fx.Provide(config.New),
 
