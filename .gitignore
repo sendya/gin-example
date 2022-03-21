@@ -15,3 +15,7 @@ logs/
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# ignore user config
+config/*
+!config/config.example.yml
