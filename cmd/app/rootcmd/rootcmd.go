@@ -2,17 +2,20 @@ package rootcmd
 
 import (
 	"context"
-	"example/internal/config"
-	"example/internal/controller"
-	"example/internal/http"
 	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+
 	"github.com/sendya/pkg/env"
 	"github.com/sendya/pkg/log"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
-	"os"
-	"os/signal"
-	"syscall"
+
+	"example/internal/config"
+	"example/internal/controller"
+	"example/internal/http"
 )
 
 // project MyApp CLI
@@ -23,6 +26,8 @@ var (
 		Long: `A fast website and server uptime monitoring.
 Complete documentation is available at https://yoursite.com`,
 		Run: func(cmd *cobra.Command, args []string) {
+			exec := executable()
+			fmt.Printf("you can use some command to run this app. e.g. %s serve\n", exec)
 		},
 	}
 	versionCmd = &cobra.Command{
@@ -32,6 +37,15 @@ Complete documentation is available at https://yoursite.com`,
 		Run: func(cmd *cobra.Command, args []string) {
 			env.CompileInfo().Print("MyApp(rootCmd)")
 			os.Exit(0)
+		},
+	}
+	genconfigCmd = &cobra.Command{
+		Use:   "genconfig",
+		Short: "generate project config.yml file",
+		Long:  "Automatically generate project config.yml file.",
+		Run: func(cmd *cobra.Command, args []string) {
+			config.Genconfig = true
+			config.New()
 		},
 	}
 	serveCmd = &cobra.Command{
@@ -67,9 +81,16 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(genconfigCmd)
 
 	rootCmd.PersistentFlags().StringVar(&config.AppEnv, "env", "prod", "dev, test, prod")
 	rootCmd.PersistentFlags().StringVar(&config.DefFileName, "config", "config", "config filename")
+}
+
+func executable() string {
+	path, _ := os.Executable()
+	_, exec := filepath.Split(path)
+	return exec
 }
 
 func Execute() error {

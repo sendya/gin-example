@@ -19,3 +19,7 @@ logs/
 # ignore user config
 config/*
 !config/config.example.yml
+
+# ignore artifacts and cache
+build/
+__debug_bin

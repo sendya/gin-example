@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +13,7 @@ var (
 	AppEnv       string = "prod"
 	DefFileName  string = "config"
 	DefFileExt   string = "yml"
-	genconfig    bool
+	Genconfig    bool
 	GlobalConfig *Config
 )
 
@@ -45,12 +44,7 @@ type Config struct {
 	} `mapstructure:"logger" json:"logger"`
 }
 
-func init() {
-	flag.StringVar(&AppEnv, "env", "prod", "dev, test, prod")
-	flag.BoolVar(&genconfig, "genconfig", false, "generate default config file")
-}
-
-func New() *Config {
+func New() (*Config, *viper.Viper) {
 	var (
 		err  error
 		conf *Config
@@ -65,14 +59,25 @@ func New() *Config {
 	v.AddConfigPath(".")
 
 	// set default config
+	// base app
 	v.SetDefault("app.name", "myapp")
 	v.SetDefault("app.host", "localhost")
 	v.SetDefault("app.port", 9000)
+	// logger
 	v.SetDefault("logger.level", "info")
 	v.SetDefault("logger.path", "./logs")
 	v.SetDefault("logger.caller", true)
+	// database
+	v.SetDefault("database.type", "mysql")
+	v.SetDefault("database.dsn", []string{"root:root@tcp(127.0.0.1:3306)/myapp?charset=utf8mb4&parseTime=True&loc=Local"})
+	v.SetDefault("database.debug", true)
+	v.SetDefault("database.migrator", true)
+	// redis
+	v.SetDefault("redis.addr", "127.0.0.1:6379")
+	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.db", 1)
 
-	if genconfig {
+	if Genconfig {
 		filename := filepath.Join(filepath.Dir("config/"), cf)
 		v.WriteConfigAs(filename)
 		fmt.Println("writter config " + filename)
@@ -105,7 +110,7 @@ func New() *Config {
 	}
 
 	GlobalConfig = conf
-	return conf
+	return conf, v
 }
 
 func fileLogger(conf *Config) {

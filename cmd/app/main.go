@@ -1,10 +1,11 @@
 package main
 
 import (
-	"example/cmd/app/rootcmd"
 	"fmt"
 	"os"
 	"time"
+
+	"example/cmd/app/rootcmd"
 )
 
 // @title                       Uncrash Core
