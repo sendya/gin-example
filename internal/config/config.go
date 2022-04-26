@@ -12,10 +12,10 @@ import (
 
 var (
 	AppEnv       string = "prod"
-	defFileName  string = "config"
-	defFileExt   string = "yml"
+	DefFileName  string = "config"
+	DefFileExt   string = "yml"
 	genconfig    bool
-	GlobalCofnig *Config
+	GlobalConfig *Config
 )
 
 type Config struct {
@@ -56,7 +56,7 @@ func New() *Config {
 		conf *Config
 		v    *viper.Viper
 	)
-	cf := envFile(defFileName, AppEnv)
+	cf := envFile(DefFileName, AppEnv)
 	v = viper.New()
 
 	v.SetConfigName(cf)
@@ -83,7 +83,7 @@ func New() *Config {
 	if err = v.ReadInConfig(); err != nil {
 		log.Warn("load env config not found")
 
-		cf = envFile(defFileName, "")
+		cf = envFile(DefFileName, "")
 		v.SetConfigName(cf)
 		log.Info("load def config", log.String("filename", cf))
 		if err = v.ReadInConfig(); err != nil {
@@ -104,10 +104,7 @@ func New() *Config {
 		fileLogger(conf)
 	}
 
-	GlobalCofnig = conf
-
-	v.WriteConfigAs("test.yml")
-
+	GlobalConfig = conf
 	return conf
 }
 
@@ -150,7 +147,7 @@ func fileLogger(conf *Config) {
 
 func envFile(filename string, env string) string {
 	if env == "" {
-		return fmt.Sprintf("%s.%s", filename, defFileExt)
+		return fmt.Sprintf("%s.%s", filename, DefFileExt)
 	}
-	return fmt.Sprintf("%s.%s.%s", filename, env, defFileExt)
+	return fmt.Sprintf("%s.%s.%s", filename, env, DefFileExt)
 }

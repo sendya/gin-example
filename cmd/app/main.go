@@ -1,75 +1,27 @@
 package main
 
 import (
-	"context"
-	"example/internal/config"
-	"example/internal/controller"
-	"example/internal/http"
-	"flag"
+	"example/cmd/app/rootcmd"
 	"fmt"
-	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
-
-	"github.com/sendya/pkg/env"
-	"go.uber.org/fx"
 )
 
-type ReadyApp = struct{}
-
-var ready = make(chan ReadyApp, 1)
-
+// @title                       Uncrash Core
+// @version                     1.0.0
+// @description                 Fast website and server uptime monitoring.
+// @BasePath                    /api
+// @securityDefinitions.apikey  Authorization
+// @in                          header
+// @name                        Authorization
 func main() {
-	flag.Parse()
-
 	// setter timezone
 	os.Setenv("TZ", "Asia/Shanghai")
 	cst := time.FixedZone("CST", 8*3600)
 	time.Local = cst
 
-	ctx := context.Background()
-
-	if app := setupApp(ctx); app != nil {
-		// waitting app ready signal.
-		<-ready
-
-		fmt.Println("Serve running.")
-
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-		<-ch
-		_ = app.Stop(ctx)
-
-		fmt.Println("\r\nBye.")
+	if err := rootcmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Fprintln: %v\n", err)
+		os.Exit(1)
 	}
-}
-
-func setupApp(ctx context.Context) *fx.App {
-	app := fx.New(
-		// if need provide log, you can remove `fx.NopLogger`.
-		fx.NopLogger,
-		// provide
-		fx.Options(
-			fx.Provide(func() chan ReadyApp { return ready }),
-			fx.Provide(env.CompileInfo),
-			fx.Provide(config.New),
-
-			fx.Provide(http.New),
-		),
-
-		// inject
-		fx.Options(
-			// handle controllers
-			controller.Modules,
-		),
-	)
-
-	if err := app.Start(ctx); err != nil {
-		log.Fatal("app start err", err.Error())
-		return nil
-	}
-
-	return app
 }
