@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -17,12 +16,11 @@ import (
 // @name                        Authorization
 func main() {
 	// setter timezone
-	os.Setenv("TZ", "Asia/Shanghai")
+	_ = os.Setenv("TZ", "Asia/Shanghai")
 	cst := time.FixedZone("CST", 8*3600)
 	time.Local = cst
 
 	if err := rootcmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Fprintln: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 }

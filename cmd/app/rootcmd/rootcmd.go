@@ -2,21 +2,23 @@ package rootcmd
 
 import (
 	"context"
+	"example/internal/core/config"
+	"example/internal/core/db"
+	"example/internal/service"
 	"fmt"
+	"github.com/sendya/pkg/env"
+	"github.com/spf13/cobra"
+	"go.uber.org/fx"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
-	"github.com/sendya/pkg/env"
-	"github.com/sendya/pkg/log"
-	"github.com/spf13/cobra"
-	"go.uber.org/fx"
-
-	"example/internal/config"
 	"example/internal/controller"
 	"example/internal/http"
 )
+
+type ReadyApp = struct{}
 
 // project MyApp CLI
 var (
@@ -28,6 +30,8 @@ Complete documentation is available at https://yoursite.com`,
 		Run: func(cmd *cobra.Command, args []string) {
 			exec := executable()
 			fmt.Printf("you can use some command to run this app. e.g. %s serve\n", exec)
+
+			runServe()
 		},
 	}
 	versionCmd = &cobra.Command{
@@ -39,8 +43,8 @@ Complete documentation is available at https://yoursite.com`,
 			os.Exit(0)
 		},
 	}
-	genconfigCmd = &cobra.Command{
-		Use:   "genconfig",
+	configCmd = &cobra.Command{
+		Use:   "config",
 		Short: "generate project config.yml file",
 		Long:  "Automatically generate project config.yml file.",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -53,18 +57,7 @@ Complete documentation is available at https://yoursite.com`,
 		Short: "serve MyApp webserver",
 		Long:  "run and handler http webserver in MyApp",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
-
-			if app := setupApp(ctx); app != nil {
-				fmt.Println("Serve running.")
-
-				ch := make(chan os.Signal, 1)
-				signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-				<-ch
-				_ = app.Stop(ctx)
-
-				fmt.Println("\r\nBye.")
-			}
+			runServe()
 		},
 	}
 	initCmd = &cobra.Command{
@@ -81,7 +74,7 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(genconfigCmd)
+	rootCmd.AddCommand(configCmd)
 
 	rootCmd.PersistentFlags().StringVar(&config.AppEnv, "env", "prod", "dev, test, prod")
 	rootCmd.PersistentFlags().StringVar(&config.DefFileName, "config", "config", "config filename")
@@ -97,6 +90,22 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+func runServe() {
+	ready := make(chan ReadyApp, 1)
+	ctx := context.WithValue(context.Background(), "-15", ready)
+
+	if app := setupApp(ctx); app != nil {
+		<-ready
+
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		<-ch
+		_ = app.Stop(ctx)
+
+		fmt.Println("\r\nBye.")
+	}
+}
+
 func setupApp(ctx context.Context) *fx.App {
 	app := fx.New(
 		// if need provide log, you can remove `fx.NopLogger`.
@@ -105,8 +114,14 @@ func setupApp(ctx context.Context) *fx.App {
 		fx.Options(
 			fx.Provide(env.CompileInfo),
 			fx.Provide(config.New),
+			fx.Provide(db.New),
 
 			fx.Provide(http.New),
+		),
+
+		// services
+		fx.Options(
+			fx.Provide(service.NewUserService),
 		),
 
 		// inject
@@ -117,8 +132,7 @@ func setupApp(ctx context.Context) *fx.App {
 	)
 
 	if err := app.Start(ctx); err != nil {
-		log.Fatal("app start err", log.ErrorField(err))
-		return nil
+		panic(err)
 	}
 
 	return app

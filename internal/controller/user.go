@@ -12,8 +12,10 @@ type UserController struct {
 	userService *service.UserService
 }
 
-func NewUserController(v1 *gin.RouterGroup) {
-	c := &UserController{}
+func NewUserController(v1 *gin.RouterGroup, userService *service.UserService) {
+	c := &UserController{
+		userService,
+	}
 
 	user := v1.Group("/user")
 	{

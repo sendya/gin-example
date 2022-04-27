@@ -2,15 +2,16 @@ package http
 
 import (
 	"context"
+	"example/internal/core/config"
 	"fmt"
+	"github.com/sendya/pkg/ginx/ginlog"
+	"github.com/sendya/pkg/ginx/traceid"
 	"io"
 	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sendya/pkg/log"
 	"go.uber.org/fx"
-
-	"example/internal/config"
 )
 
 func New(
@@ -18,7 +19,6 @@ func New(
 	conf *config.Config,
 ) (*gin.Engine, *gin.RouterGroup) {
 	confapp := conf.App
-
 	gin.SetMode(gin.DebugMode)
 	if config.AppEnv == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -30,7 +30,11 @@ func New(
 	r := gin.New()
 
 	// add middleware
-	r.Use(gin.Recovery())
+	r.Use(
+		ginlog.NewRecovery(true),
+		ginlog.New("/api/health", "/favicon.ico"),
+		traceid.New(),
+	)
 
 	v1 := r.Group("/api/v1")
 
@@ -40,7 +44,10 @@ func New(
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				log.Infof("listening web serve http://localhost:%d", confapp.Port)
-
+				v := ctx.Value("-15")
+				if ready, ok := v.(chan struct{}); ok {
+					ready <- struct{}{}
+				}
 				if err := r.Run(fmt.Sprintf("%s:%d", confapp.Host, confapp.Port)); err != nil {
 					log.Fatal("start web serve ", log.String("err", err.Error()))
 				}
