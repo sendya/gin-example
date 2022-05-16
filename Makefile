@@ -1,4 +1,4 @@
-.PHONY: start build genconfig clean
+.PHONY: start build docs genconfig clean
 
 # Define ENV
 BUILD_NAME  := app
@@ -15,7 +15,7 @@ BUILD_XPATH := github.com/sendya/pkg/env
 all: build
 
 start:
-	@go run cmd/app/main.go serve --env dev
+	@go run -tags=doc cmd/app/main.go serve --env dev
 
 build:
 	@echo 'Now building ${BUILD_TAG}'
@@ -28,6 +28,10 @@ build:
 		 -X ${BUILD_XPATH}.Built=${BUILD_TIME} \
 		 " \
 		-output=${TARGET_PATH}/{{.Dir}}_{{.OS}}_{{.Arch}} ./cmd/app/
+
+docs:
+	@swag fmt -d ./cmd/app
+	@swag init --pd -g cmd/app/main.go -o third_party/swagger
 
 genconfig:
 	@go run cmd/app/main.go genconfig --env dev

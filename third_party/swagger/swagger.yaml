@@ -1,0 +1,13 @@
+basePath: /api
+info:
+  contact: {}
+  description: Fast website and server monitoring.
+  title: Gin-Example
+  version: 1.0.0
+paths: {}
+securityDefinitions:
+  Authorization:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

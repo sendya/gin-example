@@ -7,9 +7,9 @@ import (
 	"example/cmd/app/rootcmd"
 )
 
-// @title                       Uncrash Core
+// @title                       Gin-Example
 // @version                     1.0.0
-// @description                 Fast website and server uptime monitoring.
+// @description                 Fast website and server monitoring.
 // @BasePath                    /api
 // @securityDefinitions.apikey  Authorization
 // @in                          header

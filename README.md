@@ -39,3 +39,9 @@ $ cp ./config/config.example.yml ./config/config.yml
 # or .. auto generate
 $ make genconfig
 ```
+
+### Swagger
+```bash
+# generate swagger doc.json
+$ make docs
+```

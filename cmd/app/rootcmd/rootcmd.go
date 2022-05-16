@@ -2,20 +2,22 @@ package rootcmd
 
 import (
 	"context"
-	"example/internal/core/config"
-	"example/internal/core/db"
-	"example/internal/service"
 	"fmt"
-	"github.com/sendya/pkg/env"
-	"github.com/spf13/cobra"
-	"go.uber.org/fx"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
+	"github.com/sendya/pkg/env"
+	"github.com/spf13/cobra"
+	"go.uber.org/fx"
+
 	"example/internal/controller"
+	"example/internal/core/config"
+	"example/internal/core/db"
 	"example/internal/http"
+	"example/internal/http/swag"
+	"example/internal/service"
 )
 
 type ReadyApp = struct{}
@@ -128,6 +130,8 @@ func setupApp(ctx context.Context) *fx.App {
 		fx.Options(
 			// handle controllers
 			controller.Modules,
+			// swagger
+			fx.Invoke(swag.InitSwagger),
 		),
 	)
 
